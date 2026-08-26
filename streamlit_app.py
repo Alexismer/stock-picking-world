@@ -69,14 +69,17 @@ with tab1:
     if not p6m_v.empty:
         pmin, pmax = p6m_v.min(), p6m_v.max()
         def score1(r):
-            mom = ((r["Perf 6M %"]-pmin)/(pmax-pmin)*100) if r["Perf 6M %"] is not None and pmax>pmin else 50
-            cheap = max(0,min(100,(2-r["PE actuel"]/r["PE med 10y"])*50))
+            p6m = r["Perf 6M %"]
+            mom = ((p6m-pmin)/(pmax-pmin)*100) if pd.notna(p6m) and pmax>pmin else 50
+            try: cheap = max(0,min(100,(2-r["PE actuel"]/r["PE med 10y"])*50))
+            except: cheap = 50
             pib = max(0,min(100,(r["PIB fc %"] or 0)*100/7))
             debt = max(0,min(100,100-(r["Dette/PIB %"] or 100)/3))
             bond = max(0,min(100,100-abs((r["Bond 10Y %"] or 4)-3)*15))
-            return round(0.25*mom+0.35*cheap+0.20*pib+0.10*debt+0.10*bond)
+            val = 0.25*mom+0.35*cheap+0.20*pib+0.10*debt+0.10*bond
+            return int(round(val)) if pd.notna(val) else 0
         df1["Score /100"] = df1.apply(score1, axis=1)
-    df1 = df1.sort_values("Score /100" if tri_mode.startswith("Long") else "Perf 6M %", ascending=False).reset_index(drop=True)
+    df1 = df1.sort_values("Score /100" if tri_mode.startswith("Long") else "Perf 6M %", ascending=False, na_position="last").reset_index(drop=True)
 
     st.dataframe(df1, use_container_width=True, hide_index=True, column_config={
         "Score /100": st.column_config.ProgressColumn("Score /100", min_value=0, max_value=100, format="%d"),
@@ -130,7 +133,8 @@ with tab2:
             p6n = max(0,min(100,d["perf_6m"]*2+50))
             pyn = max(0,min(100,d["perf_ytd"]*1.5+50))
             rsi_s = 100-abs(d["rsi"]-50)*2
-            score = round(0.30*p6n+0.30*fp+0.20*rsi_s+0.20*pyn)
+            try: score = int(round(0.30*p6n+0.30*fp+0.20*rsi_s+0.20*pyn))
+            except: score = 0
             rows.append({"Secteur":name,"ETF":sym,"Prix $":d["price"],
                         "Perf 1M %":d["perf_1m"],"Perf 6M %":d["perf_6m"],"Perf YTD %":d["perf_ytd"],
                         "RSI":d["rsi"],"Future pot.":fp,"Score /100":score})
@@ -199,22 +203,24 @@ with tab3:
     with c2:
         preset = st.radio("Preset", ["Aucun","Value","Growth","Quality","Dividend","Momentum","Deep Value"], horizontal=True)
 
-    # Filtres defaults par preset
+    # Filtres defaults par preset (Aucun = tres permissif pour tout afficher)
     defaults = {
-        "Value":       {"pe":20, "roe":15, "growth":0, "div":0, "perf":-30},
-        "Growth":      {"pe":100, "roe":5, "growth":20, "div":0, "perf":0},
-        "Quality":     {"pe":40, "roe":20, "growth":5, "div":0, "perf":-20},
-        "Dividend":    {"pe":30, "roe":5, "growth":0, "div":2.5, "perf":-20},
-        "Momentum":    {"pe":200, "roe":-10, "growth":0, "div":0, "perf":15},
-        "Deep Value":  {"pe":15, "roe":10, "growth":0, "div":0, "perf":-40},
+        "Aucun":       {"pe":300, "roe":-50, "growth":-100, "div":0.0, "perf":-100},
+        "Value":       {"pe":20,  "roe":15,  "growth":0,    "div":0.0, "perf":-30},
+        "Growth":      {"pe":100, "roe":5,   "growth":20,   "div":0.0, "perf":0},
+        "Quality":     {"pe":40,  "roe":20,  "growth":5,    "div":0.0, "perf":-20},
+        "Dividend":    {"pe":30,  "roe":5,   "growth":0,    "div":2.5, "perf":-20},
+        "Momentum":    {"pe":200, "roe":-10, "growth":0,    "div":0.0, "perf":15},
+        "Deep Value":  {"pe":15,  "roe":10,  "growth":0,    "div":0.0, "perf":-40},
     }
-    d = defaults.get(preset, {"pe":60,"roe":0,"growth":-10,"div":0,"perf":-30})
+    d = defaults[preset]
     c3,c4,c5,c6,c7 = st.columns(5)
-    pe_max = c3.number_input("PE max", 0, 300, d["pe"])
-    roe_min = c4.number_input("ROE min %", -50, 100, d["roe"])
-    growth_min = c5.number_input("Growth min %", -50, 200, d["growth"])
-    div_min = c6.number_input("Div min %", 0.0, 10.0, float(d["div"]))
-    perf_min = c7.number_input("Perf 6M min %", -100, 500, d["perf"])
+    # key= base sur preset pour forcer reset des widgets quand preset change
+    pe_max     = c3.number_input("PE max",         0,   300, d["pe"],     key=f"pe_{preset}")
+    roe_min    = c4.number_input("ROE min %",      -50, 100, d["roe"],    key=f"roe_{preset}")
+    growth_min = c5.number_input("Growth min %",   -100,200, d["growth"], key=f"gr_{preset}")
+    div_min    = c6.number_input("Div min %",      0.0, 10.0,float(d["div"]), key=f"div_{preset}")
+    perf_min   = c7.number_input("Perf 6M min %",  -100,500, d["perf"],   key=f"perf_{preset}")
 
     with st.spinner("Récupération fondamentaux (30-60s)..."):
         rows = []
@@ -232,7 +238,8 @@ with tab3:
             qual = max(0,min(100,roe*2 + (x.get("margin") or 0)*100))
             gr = max(0,min(100,growth*4))
             mom = max(0,min(100,perf*2+50))
-            score = round(0.25*cheap+0.25*qual+0.25*gr+0.25*mom)
+            try: score = int(round(0.25*cheap+0.25*qual+0.25*gr+0.25*mom))
+            except: score = 0
             rows.append({"Ticker":t,"Nom":x["name"][:25],"Pays":pays,"Secteur":sect,
                         "Prix $":x["price"],"PE":x.get("pe"),"P/B":x.get("pb"),
                         "EV/EBITDA":x.get("ev_ebitda"),"PEG":x.get("peg"),
