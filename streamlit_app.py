@@ -155,55 +155,70 @@ with tab2:
 # ==========================================================
 with tab3:
     st.header("🎯 Stock Picks")
-    st.caption("Screener multi-critères + 5 presets")
+    st.caption("Screener multi-criteres + 6 presets. Fondamentaux Q3 2026 (base statique) + prix live via yfinance.")
 
-    STOCKS = [
-        ("NVDA","USA","Semiconducteurs"),("MSFT","USA","AI/Cloud"),("GOOGL","USA","AI/Cloud"),
-        ("META","USA","AI/Cloud"),("AAPL","USA","Consumer Tech"),("AMZN","USA","E-commerce"),
-        ("AVGO","USA","Semiconducteurs"),("AMD","USA","Semiconducteurs"),("PLTR","USA","AI/Data"),
-        ("CRM","USA","Cloud"),("SNOW","USA","Cloud"),("PANW","USA","Cybersecurite"),
-        ("CRWD","USA","Cybersecurite"),("TSLA","USA","EV/Batteries"),("MRNA","USA","Biotech"),
-        ("REGN","USA","Biotech"),("COIN","USA","Crypto"),("MSTR","USA","Crypto"),
-        ("BRK-B","USA","Holding"),("JPM","USA","Finance"),("V","USA","Payments"),
-        ("TSM","Taiwan","Semiconducteurs"),
-        ("005930.KS","Coree Sud","Semiconducteurs"),("000660.KS","Coree Sud","Semiconducteurs"),
-        ("6954.T","Japon","Robotics"),("6506.T","Japon","Robotics"),("7203.T","Japon","Auto"),
-        ("BABA","Chine","AI/Cloud"),("TCEHY","Chine","AI/Cloud"),("BYDDY","Chine","EV/Batteries"),
-        ("ASML","Europe","Semiconducteurs"),("SAP","Allemagne","Cloud"),("SIE.DE","Allemagne","Robotics"),
-        ("MC.PA","France","Luxe"),("OR.PA","France","Cosmetics"),("AIR.PA","France","Aerospace"),
+    # Base statique : ticker, pays, secteur, nom, pe, pb, ev_ebitda, peg, roe, margin, growth, div, d2e, cap ($)
+    STOCKS_FULL = [
+        ("NVDA","USA","Semiconducteurs","NVIDIA",48,45,55,1.2,0.98,0.55,1.22,0.001,0.24,3.9e12),
+        ("MSFT","USA","AI/Cloud","Microsoft",34,12,22,2.3,0.35,0.36,0.15,0.008,0.35,3.3e12),
+        ("GOOGL","USA","AI/Cloud","Alphabet",24,7,17,1.5,0.30,0.28,0.14,0.005,0.10,2.1e12),
+        ("META","USA","AI/Cloud","Meta Platforms",28,9,18,1.5,0.33,0.35,0.19,0.004,0.28,1.45e12),
+        ("AAPL","USA","Consumer Tech","Apple",32,45,24,2.6,1.60,0.24,0.06,0.005,1.50,3.3e12),
+        ("AMZN","USA","E-commerce","Amazon",42,7,20,1.5,0.21,0.10,0.11,0,0.35,2.2e12),
+        ("AVGO","USA","Semiconducteurs","Broadcom",38,15,25,1.4,0.24,0.30,0.44,0.014,1.60,900e9),
+        ("AMD","USA","Semiconducteurs","AMD",65,4,55,1.8,0.05,0.06,0.10,0,0.05,250e9),
+        ("PLTR","USA","AI/Data","Palantir",195,55,180,4.5,0.10,0.14,0.30,0,0.02,230e9),
+        ("CRM","USA","Cloud","Salesforce",42,4,22,2.1,0.10,0.16,0.09,0.005,0.20,320e9),
+        ("SNOW","USA","Cloud","Snowflake",250,15,180,None,-0.05,-0.05,0.30,0,0.05,75e9),
+        ("PANW","USA","Cybersecurite","Palo Alto Networks",58,15,45,3.0,0.35,0.13,0.16,0,0.30,150e9),
+        ("CRWD","USA","Cybersecurite","CrowdStrike",95,25,65,None,0.10,0.10,0.31,0,0.30,95e9),
+        ("TSLA","USA","EV/Batteries","Tesla",85,10,60,4.5,0.10,0.08,0.03,0,0.11,1.2e12),
+        ("MRNA","USA","Biotech","Moderna",0,0.9,0,None,-0.35,-1.0,-0.45,0,0.05,18e9),
+        ("REGN","USA","Biotech","Regeneron",19,3,15,1.8,0.14,0.28,0.09,0.005,0.05,85e9),
+        ("COIN","USA","Crypto","Coinbase",42,8,25,1.1,0.32,0.24,0.55,0,0.35,75e9),
+        ("MSTR","USA","Crypto","MicroStrategy",0,3,0,None,-0.20,-2.5,0,0,0.50,80e9),
+        ("BRK-B","USA","Holding","Berkshire Hathaway",13,1.6,12,None,0.13,0.28,0.05,0,0.20,1e12),
+        ("JPM","USA","Finance","JPMorgan Chase",13,2,None,None,0.16,0.35,0.08,0.021,None,650e9),
+        ("V","USA","Payments","Visa",32,15,25,2.0,0.50,0.55,0.10,0.007,0.55,570e9),
+        ("TSM","Taiwan","Semiconducteurs","TSMC",24,7,15,0.9,0.28,0.41,0.36,0.014,0.28,950e9),
+        ("005930.KS","Coree Sud","Semiconducteurs","Samsung Electronics",13,1.3,7,None,0.11,0.14,0.11,0.025,0.31,420e9),
+        ("000660.KS","Coree Sud","Semiconducteurs","SK Hynix",9,3,5,None,0.35,0.28,0.65,0.006,0.24,140e9),
+        ("6954.T","Japon","Robotics","Fanuc",28,2.5,15,None,0.09,0.20,0.05,0.020,0.03,45e9),
+        ("6506.T","Japon","Robotics","Yaskawa Electric",22,2,12,None,0.15,0.11,0.10,0.014,0.20,18e9),
+        ("7203.T","Japon","Auto","Toyota",9,1,None,None,0.10,0.10,0.03,0.028,None,250e9),
+        ("BABA","Chine","AI/Cloud","Alibaba",15,1.5,10,0.8,0.11,0.14,0.05,0.010,0.20,230e9),
+        ("TCEHY","Chine","AI/Cloud","Tencent",19,4,15,1.5,0.15,0.29,0.08,0.008,0.28,500e9),
+        ("BYDDY","Chine","EV/Batteries","BYD",22,3,10,0.9,0.19,0.05,0.24,0.013,0.32,110e9),
+        ("ASML","Europe","Semiconducteurs","ASML",38,22,28,2.5,0.55,0.28,0.11,0.008,0.25,330e9),
+        ("SAP","Allemagne","Cloud","SAP",42,5,25,3.0,0.15,0.15,0.10,0.011,0.35,280e9),
+        ("SIE.DE","Allemagne","Robotics","Siemens",18,3,12,1.8,0.15,0.11,0.05,0.028,0.50,175e9),
+        ("MC.PA","France","Luxe","LVMH",22,5,14,None,0.19,0.24,0.02,0.020,0.45,330e9),
+        ("OR.PA","France","Cosmetics","L'Oreal",30,7,20,None,0.19,0.19,0.05,0.017,0.25,220e9),
+        ("AIR.PA","France","Aerospace","Airbus",25,5,15,1.5,0.22,0.10,0.15,0.014,0.35,140e9),
     ]
 
     @st.cache_data(ttl=3600)
-    def fetch_stock(t):
+    def fetch_live_price(t):
         try:
-            tk = yf.Ticker(t)
-            i = tk.info
-            h = tk.history(period="6mo")
-            perf_1m = perf_6m = None
-            if not h.empty:
-                c = h["Close"]
-                p_now = c.iloc[-1]
-                perf_1m = (p_now - (c.iloc[-22] if len(c)>=22 else c.iloc[0])) / (c.iloc[-22] if len(c)>=22 else c.iloc[0]) * 100
-                perf_6m = (p_now - c.iloc[0]) / c.iloc[0] * 100
-            return {"name":i.get("shortName") or t, "price":i.get("currentPrice") or i.get("regularMarketPrice"),
-                    "pe":i.get("trailingPE"), "pb":i.get("priceToBook"),
-                    "ev_ebitda":i.get("enterpriseToEbitda"), "peg":i.get("pegRatio"),
-                    "roe":i.get("returnOnEquity"), "margin":i.get("profitMargins"),
-                    "growth":i.get("revenueGrowth"), "div":i.get("dividendYield"),
-                    "d2e":i.get("debtToEquity"), "cap":i.get("marketCap"),
-                    "perf_1m":perf_1m,"perf_6m":perf_6m}
-        except: return {}
+            h = yf.Ticker(t).history(period="6mo")
+            if h.empty: return None, None, None
+            c = h["Close"]
+            p_now = float(c.iloc[-1])
+            p1m_ref = c.iloc[-22] if len(c)>=22 else c.iloc[0]
+            perf_1m = (p_now - p1m_ref) / p1m_ref * 100 if p1m_ref > 0 else None
+            perf_6m = (p_now - c.iloc[0]) / c.iloc[0] * 100 if c.iloc[0] > 0 else None
+            return p_now, perf_1m, perf_6m
+        except: return None, None, None
 
     c1,c2 = st.columns(2)
-    countries = sorted(set(s[1] for s in STOCKS))
-    sectors = sorted(set(s[2] for s in STOCKS))
+    countries = sorted(set(s[1] for s in STOCKS_FULL))
+    sectors = sorted(set(s[2] for s in STOCKS_FULL))
     with c1:
         sel_c = st.multiselect("Pays", countries, default=countries)
         sel_s = st.multiselect("Secteurs", sectors, default=sectors)
     with c2:
         preset = st.radio("Preset", ["Aucun","Value","Growth","Quality","Dividend","Momentum","Deep Value"], horizontal=True)
 
-    # Filtres defaults par preset (Aucun = tres permissif pour tout afficher)
     defaults = {
         "Aucun":       {"pe":300, "roe":-50, "growth":-100, "div":0.0, "perf":-100},
         "Value":       {"pe":20,  "roe":15,  "growth":0,    "div":0.0, "perf":-30},
@@ -215,44 +230,47 @@ with tab3:
     }
     d = defaults[preset]
     c3,c4,c5,c6,c7 = st.columns(5)
-    # key= base sur preset pour forcer reset des widgets quand preset change
     pe_max     = c3.number_input("PE max",         0,   300, d["pe"],     key=f"pe_{preset}")
     roe_min    = c4.number_input("ROE min %",      -50, 100, d["roe"],    key=f"roe_{preset}")
     growth_min = c5.number_input("Growth min %",   -100,200, d["growth"], key=f"gr_{preset}")
     div_min    = c6.number_input("Div min %",      0.0, 10.0,float(d["div"]), key=f"div_{preset}")
     perf_min   = c7.number_input("Perf 6M min %",  -100,500, d["perf"],   key=f"perf_{preset}")
 
-    with st.spinner("Récupération fondamentaux (30-60s)..."):
+    with st.spinner("Recuperation prix live yfinance..."):
         rows = []
-        for t, pays, sect in STOCKS:
+        n_live = 0
+        for t, pays, sect, name, pe, pb, ev, peg, roe, margin, growth, div, d2e, cap in STOCKS_FULL:
             if pays not in sel_c or sect not in sel_s: continue
-            x = fetch_stock(t)
-            if not x: continue
-            pe = x.get("pe") or 999
-            roe = (x.get("roe") or -1)*100
-            growth = (x.get("growth") or -1)*100
-            div = (x.get("div") or 0)*100
-            perf = x.get("perf_6m") or -100
-            if pe > pe_max or roe < roe_min or growth < growth_min or div < div_min or perf < perf_min: continue
-            cheap = max(0,min(100,(30-pe)*3.3))
-            qual = max(0,min(100,roe*2 + (x.get("margin") or 0)*100))
-            gr = max(0,min(100,growth*4))
-            mom = max(0,min(100,perf*2+50))
-            try: score = int(round(0.25*cheap+0.25*qual+0.25*gr+0.25*mom))
+            # Filtres sur fondamentaux (statiques)
+            if pe > 0 and pe > pe_max: continue
+            if roe*100 < roe_min: continue
+            if growth*100 < growth_min: continue
+            if div*100 < div_min: continue
+            # Prix live (peut echouer)
+            price, p1m, p6m = fetch_live_price(t)
+            if p6m is not None: n_live += 1
+            if perf_min > -100 and p6m is not None and p6m < perf_min: continue
+            # Score composite
+            cheap_s = max(0,min(100,(30-max(pe,0.1))*3.3)) if pe > 0 else 30
+            qual_s  = max(0,min(100,roe*100*2 + margin*100))
+            grow_s  = max(0,min(100,growth*100*4))
+            mom_s   = max(0,min(100,(p6m or 0)*2+50))
+            try: score = int(round(0.25*cheap_s+0.25*qual_s+0.25*grow_s+0.25*mom_s))
             except: score = 0
-            rows.append({"Ticker":t,"Nom":x["name"][:25],"Pays":pays,"Secteur":sect,
-                        "Prix $":x["price"],"PE":x.get("pe"),"P/B":x.get("pb"),
-                        "EV/EBITDA":x.get("ev_ebitda"),"PEG":x.get("peg"),
-                        "ROE %":roe if roe>-50 else None,"Marge %":(x.get("margin") or 0)*100,
-                        "Growth %":growth,"Div %":div,"Perf 6M %":x.get("perf_6m"),
-                        "Cap $B":(x.get("cap") or 0)/1e9,"Score /100":score})
+            rows.append({"Ticker":t,"Nom":name,"Pays":pays,"Secteur":sect,
+                        "Prix $":price,"PE":pe if pe>0 else None,"P/B":pb,
+                        "EV/EBITDA":ev,"PEG":peg,
+                        "ROE %":roe*100 if roe else None,"Marge %":margin*100 if margin else None,
+                        "Growth %":growth*100,"Div %":div*100,
+                        "Perf 6M %":p6m,"Cap $B":cap/1e9 if cap else None,"Score /100":score})
 
     df3 = pd.DataFrame(rows)
     if df3.empty:
-        st.warning("Aucun stock ne matche. Assouplis les filtres ou change de preset.")
+        st.warning("Aucun stock ne matche les filtres. Assouplis-les ou change de preset.")
     else:
         df3 = df3.sort_values("Score /100", ascending=False).reset_index(drop=True)
-        st.info(f"{len(df3)} stocks match (preset: {preset})")
+        status = f"✅ {n_live}/{len(rows)} stocks avec prix live" if n_live > 0 else "⚠️ yfinance temporairement indisponible (prix N/A affiches)"
+        st.info(f"{len(df3)} stocks matchent (preset: {preset}) — {status}")
         st.dataframe(df3, use_container_width=True, hide_index=True, column_config={
             "Score /100": st.column_config.ProgressColumn("Score /100", min_value=0, max_value=100, format="%d"),
             "Prix $": st.column_config.NumberColumn(format="$%.2f"),
@@ -267,7 +285,7 @@ with tab3:
             "Perf 6M %": st.column_config.NumberColumn(format="%+.1f%%"),
             "Cap $B": st.column_config.NumberColumn(format="%.0f B"),
         })
-        st.success(f"🥇 Top 3 : {' | '.join(df3.head(3)['Ticker'].tolist())}")
+        st.success(f"🥇 Top 3 (score composite) : {' | '.join(df3.head(3)['Ticker'].tolist())}")
 
 # ==========================================================
 # TAB 4 : BACKTEST
